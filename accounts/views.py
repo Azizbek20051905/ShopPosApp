@@ -1,8 +1,18 @@
-from rest_framework import status, views, permissions
+from rest_framework import status, views, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from .serializers import LoginSerializer, UserSerializer
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().select_related('profile').order_by('id')
+    serializer_class = UserSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
 class LoginAPIView(views.APIView):
     permission_classes = [permissions.AllowAny]

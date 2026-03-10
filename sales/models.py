@@ -2,6 +2,13 @@ from django.db import models
 
 
 class Sale(models.Model):
+  cashier = models.ForeignKey(
+    "auth.User",
+    related_name="sales",
+    on_delete=models.PROTECT,
+    null=True,
+    blank=True,
+  )
   total_amount = models.DecimalField(
     max_digits=10,
     decimal_places=2,
