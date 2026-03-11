@@ -21,12 +21,6 @@ class SaleItemInputSerializer(serializers.Serializer):
 
 class SaleItemSerializer(serializers.ModelSerializer):
   product_name = serializers.CharField(source="product.name", read_only=True)
-  price = serializers.DecimalField(
-    source="price_at_sale",
-    max_digits=10,
-    decimal_places=2,
-    read_only=True,
-  )
 
   class Meta:
     model = SaleItem
@@ -35,104 +29,83 @@ class SaleItemSerializer(serializers.ModelSerializer):
       "product",
       "product_name",
       "quantity",
-      "price",
       "price_at_sale",
       "profit",
     ]
-    read_only_fields = ["id", "product_name", "price", "price_at_sale", "profit"]
+    read_only_fields = ["id", "product_name", "price_at_sale", "profit"]
 
 
 class SaleSerializer(serializers.ModelSerializer):
-  items = serializers.SerializerMethodField()
+  items = SaleItemInputSerializer(many=True, write_only=True)
   created_at = serializers.DateTimeField(read_only=True)
-  total_price = serializers.DecimalField(
-    source="total_amount",
-    max_digits=10,
-    decimal_places=2,
-    read_only=True,
-  )
-  sale_id = serializers.IntegerField(source="id", read_only=True)
-  cashier_name = serializers.CharField(source="cashier.username", read_only=True)
 
   class Meta:
     model = Sale
-    fields = [
-      "id", 
-      "sale_id", 
-      "total_amount", 
-      "total_price", 
-      "total_profit", 
-      "created_at", 
-      "cashier", 
-      "cashier_name",
-      "items"
-    ]
-    read_only_fields = [
-      "id", 
-      "sale_id", 
-      "total_amount", 
-      "total_price", 
-      "total_profit", 
-      "created_at", 
-      "cashier",
-      "cashier_name"
-    ]
-
-  def get_items(self, obj):
-    # Use the detailed serializer for retrieval
-    return SaleItemSerializer(obj.items.all(), many=True).data
-
-  def validate(self, data):
-    # Handle the 'items' for POST requests manually since we use SerializerMethodField for retrieval
-    items_data = self.context['request'].data.get('items', [])
-    if not items_data and self.context['request'].method == 'POST':
-        raise serializers.ValidationError({"items": "At least one item is required."})
-    return data
+    fields = ["id", "total_amount", "total_profit", "created_at", "items"]
+    read_only_fields = ["id", "total_amount", "total_profit", "created_at"]
 
   def create(self, validated_data):
-    request = self.context.get("request")
-    cashier = request.user if request and request.user.is_authenticated else None
-    
-    # Extract items directly from request data as we used SerializerMethodField for reading
-    items_input_serializer = SaleItemInputSerializer(
-        data=request.data.get("items", []), 
-        many=True
-    )
-    items_input_serializer.is_valid(raise_exception=True)
-    items_data = items_input_serializer.validated_data
-
-    total_amount = Decimal("0")
-    total_profit = Decimal("0")
-
-    product_updates: dict[int, Decimal] = {}
-
-    for item in items_data:
-      product: Product = item["product"]
-      qty: Decimal = item["quantity"]
-
-      line_total = product.sale_price * qty
-      line_profit = (product.sale_price - product.purchase_price) * qty
-
-      total_amount += line_total
-      total_profit += line_profit
-
-      # Check for sufficient stock before proceeding
-      if product.stock_quantity < qty:
-        raise serializers.ValidationError({
-          "items": f"Insufficient stock for {product.name}. Available: {product.stock_quantity}, Requested: {qty}"
-        })
-
-      product_updates[product.id] = product_updates.get(product.id, Decimal("0")) + qty
+    items_data = validated_data.pop("items", [])
+    if not items_data:
+      raise serializers.ValidationError({"items": "At least one item is required."})
 
     with transaction.atomic():
-      sale = Sale.objects.create(
-        cashier=cashier,
-        total_amount=total_amount,
-        total_profit=total_profit,
+      # Lock all products involved to prevent race conditions.
+      product_ids = [item["product"].id for item in items_data]
+      locked_products = (
+        Product.objects.select_for_update()
+        .filter(id__in=product_ids)
       )
+      product_by_id = {p.id: p for p in locked_products}
 
+      # Aggregate quantities per product (barcode scans can add same product multiple times).
+      requested_qty: dict[int, Decimal] = {}
       for item in items_data:
         product: Product = item["product"]
+        qty: Decimal = item["quantity"]
+        requested_qty[product.id] = requested_qty.get(product.id, Decimal("0")) + qty
+
+      # Validate stock before any write.
+      errors: list[dict[str, str]] = []
+      for pid, qty in requested_qty.items():
+        product = product_by_id.get(pid)
+        if product is None:
+          errors.append({"product_id": str(pid), "detail": "Product not found."})
+          continue
+
+        if product.stock_quantity <= 0:
+          errors.append(
+            {
+              "product_id": str(pid),
+              "barcode": product.barcode,
+              "detail": "Product is out of stock.",
+            }
+          )
+        elif product.stock_quantity < qty:
+          errors.append(
+            {
+              "product_id": str(pid),
+              "barcode": product.barcode,
+              "detail": "Not enough stock.",
+            }
+          )
+
+      if errors:
+        raise serializers.ValidationError({"items": errors})
+
+      # Compute totals using locked rows (consistent values).
+      total_amount = Decimal("0")
+      total_profit = Decimal("0")
+      for pid, qty in requested_qty.items():
+        product = product_by_id[pid]
+        total_amount += product.sale_price * qty
+        total_profit += (product.sale_price - product.purchase_price) * qty
+
+      sale = Sale.objects.create(total_amount=total_amount, total_profit=total_profit)
+
+      # Create sale items (one per request entry, not aggregated) to keep payload traceable.
+      for item in items_data:
+        product: Product = product_by_id[item["product"].id]
         qty: Decimal = item["quantity"]
         SaleItem.objects.create(
           sale=sale,
@@ -142,9 +115,9 @@ class SaleSerializer(serializers.ModelSerializer):
           profit=(product.sale_price - product.purchase_price) * qty,
         )
 
-      # update stock quantities
-      for product_id, qty in product_updates.items():
-        product = Product.objects.select_for_update().get(id=product_id)
+      # Decrease stock quantities.
+      for pid, qty in requested_qty.items():
+        product = product_by_id[pid]
         product.stock_quantity = product.stock_quantity - qty
         product.save(update_fields=["stock_quantity"])
 

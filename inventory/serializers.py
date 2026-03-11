@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.db import transaction
 from rest_framework import serializers
 
 from products.models import Product
@@ -21,14 +22,16 @@ class AddStockSerializer(serializers.Serializer):
     product: Product = validated_data["product"]
     qty: Decimal = validated_data["quantity"]
 
-    product.stock_quantity = product.stock_quantity + qty
-    product.save(update_fields=["stock_quantity"])
+    with transaction.atomic():
+      product = Product.objects.select_for_update().get(id=product.id)
+      product.stock_quantity = product.stock_quantity + qty
+      product.save(update_fields=["stock_quantity"])
 
-    StockHistory.objects.create(
-      product=product,
-      change_amount=qty,
-      type=StockHistoryType.ADD,
-    )
+      StockHistory.objects.create(
+        product=product,
+        change_amount=qty,
+        type=StockHistoryType.ADD,
+      )
 
     return product
 

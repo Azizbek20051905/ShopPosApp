@@ -1,20 +1,14 @@
-from rest_framework import mixins, viewsets, permissions
+from rest_framework import mixins, viewsets
 
 from .models import Sale
 from .serializers import SaleSerializer
 
 
-class SaleViewSet(viewsets.ModelViewSet):
+class SaleViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
   """
-  POST /api/sales/ - Creates a sale.
-  GET /api/sales/ - Lists sales history.
-  GET /api/sales/{id}/ - Retrieves a detailed receipt.
+  POST /api/sales/
+  Creates a sale with nested items, updates inventory, and computes profit.
   """
-  permission_classes = [permissions.IsAuthenticated]
-  queryset = (
-    Sale.objects.all()
-    .select_related("cashier")
-    .prefetch_related("items__product")
-    .order_by("-created_at")
-  )
+
+  queryset = Sale.objects.all().order_by("-created_at")
   serializer_class = SaleSerializer

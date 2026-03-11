@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-l-v-%e=)^22j3%8gow0%z!@79dtkc%-q6qx6kl7f$@ro0b&7uv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -42,7 +42,6 @@ INSTALLED_APPS = [
 
     # Third‑party
     'rest_framework',
-    'rest_framework.authtoken',
     'corsheaders',
 
     # Local apps
@@ -152,62 +151,20 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
 }
 
 
 # CORS (for Flutter / mobile clients)
 CORS_ALLOW_ALL_ORIGINS = True
-from corsheaders.defaults import default_headers
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "ngrok-skip-browser-warning",
-]
 
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# Jazzmin UI Configuration
-JAZZMIN_SETTINGS = {
-    "site_title": "POS System Admin",
-    "site_header": "POS Administration",
-    "site_brand": "POS Admin Panel",
-    # Custom admin logo placed in static folder
-    "site_logo": "admin_logo.svg",
-    
-    # Navigation grouping definition based on apps
-    "order_with_respect_to": [
-        "products",
-        "sales",
-        "inventory",
-        "analytics",
-    ],
-
-    # Custom icons for better UI
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        
-        "products.Category": "fas fa-tags",
-        "products.Product": "fas fa-box",
-        
-        "sales.Sale": "fas fa-shopping-cart",
-        "sales.SaleItem": "fas fa-receipt",
-        
-        "inventory.StockHistory": "fas fa-warehouse",
-        
-        "analytics.DailySales": "fas fa-chart-line",
-    },
-    
-    "default_icon_parents": "fas fa-folder",
-    "default_icon_children": "fas fa-circle",
-}

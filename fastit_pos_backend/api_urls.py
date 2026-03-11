@@ -1,10 +1,23 @@
-from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = [
-    path('', include('accounts.api_urls')), # Handles /api/login/, /api/users/, etc.
-    path('', include('products.api_urls')),
-    path('sales/', include('sales.api_urls')),
-    path('inventory/', include('inventory.api_urls')),
-    path('analytics/', include('analytics.api_urls')),
-]
+from analytics.views import AnalyticsViewSet
+from inventory.views import InventoryViewSet
+from products.views import CategoryViewSet, ProductViewSet
+from sales.views import SaleViewSet
+
+router = DefaultRouter()
+
+# API structure:
+# /api/products/
+# /api/categories/
+# /api/sales/
+# /api/inventory/
+# /api/analytics/
+router.register(r"products", ProductViewSet, basename="product")
+router.register(r"categories", CategoryViewSet, basename="category")
+router.register(r"sales", SaleViewSet, basename="sale")
+router.register(r"inventory", InventoryViewSet, basename="inventory")
+router.register(r"analytics", AnalyticsViewSet, basename="analytics")
+
+urlpatterns = router.urls
 

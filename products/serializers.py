@@ -30,7 +30,6 @@ class ProductSerializer(serializers.ModelSerializer):
       "sale_price",
       "unit",
       "stock_quantity",
-      "min_stock",
       "image",
       "created_at",
       "updated_at",

@@ -1,54 +1,54 @@
-from datetime import date, timedelta
+from datetime import date
+
 from django.db.models import Sum
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from sales.models import Sale, SaleItem
 
+
 class AnalyticsViewSet(viewsets.ViewSet):
+  """
+  Analytics endpoints.
+  """
+
+  @action(detail=False, methods=["get"], url_path="today")
+  def today(self, request):
     """
-    Analytics endpoints for POS dashboard.
+    GET /api/analytics/today/
+    Returns summary of today's sales and profit.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    today = date.today()
 
-    def list(self, request):
-        """
-        GET /api/analytics/
-        Returns comprehensive sales and product analytics.
-        """
-        today = date.today()
-        yesterday = today - timedelta(days=1)
+    sales_qs = Sale.objects.filter(created_at__date=today)
+    total_sales = sales_qs.aggregate(s=Sum("total_amount"))["s"] or 0
+    total_profit = sales_qs.aggregate(s=Sum("total_profit"))["s"] or 0
 
-        # Sales aggregations
-        today_sales = Sale.objects.filter(created_at__date=today).aggregate(
-            s=Sum("total_amount")
-        )["s"] or 0
-        
-        yesterday_sales = Sale.objects.filter(created_at__date=yesterday).aggregate(
-            s=Sum("total_amount")
-        )["s"] or 0
-        
-        total_sales = Sale.objects.aggregate(
-            s=Sum("total_amount")
-        )["s"] or 0
+    top_items = (
+      SaleItem.objects.filter(sale__created_at__date=today)
+      .values("product_id", "product__name")
+      .annotate(quantity_sold=Sum("quantity"))
+      .order_by("-quantity_sold")[:5]
+    )
 
-        # Top 5 products by total quantity sold
-        top_items = (
-            SaleItem.objects.values("product__name")
-            .annotate(total_quantity=Sum("quantity"))
-            .order_by("-total_quantity")[:5]
-        )
+    top_products = [
+      {
+        "product_id": item["product_id"],
+        "name": item["product__name"],
+        "quantity_sold": float(item["quantity_sold"]),
+      }
+      for item in top_items
+    ]
 
-        top_products = [
-            {
-                "product": item["product__name"],
-                "total_quantity": float(item["total_quantity"]),
-            }
-            for item in top_items
-        ]
+    return Response(
+      {
+        "total_sales": float(total_sales),
+        "profit": float(total_profit),
+        "top_products": top_products,
+      }
+    )
 
-        return Response({
-            "today_sales": float(today_sales),
-            "yesterday_sales": float(yesterday_sales),
-            "total_sales": float(total_sales),
-            "top_products": top_products,
-        })
+from django.shortcuts import render
+
+# Create your views here.
