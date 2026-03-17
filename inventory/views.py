@@ -1,6 +1,7 @@
 from rest_framework import status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from store.models import ActivityLog
 
 from .models import StockHistory
 from .serializers import AddStockSerializer, StockHistorySerializer
@@ -23,6 +24,14 @@ class InventoryViewSet(viewsets.ViewSet):
     serializer = AddStockSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     product = serializer.save()
+    
+    # Log the activity
+    ActivityLog.objects.create(
+        user=self.request.user,
+        action='stock_update',
+        detail=f"Stock for '{product.name}' increased by {serializer.validated_data['quantity']}."
+    )
+    
     return Response(
       {
         "product_id": product.id,
