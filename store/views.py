@@ -15,7 +15,9 @@ class StoreSettingsView(APIView):
         return Response(StoreSettingsSerializer(settings_obj).data)
 
     def put(self, request):
-        if not request.user.is_staff and not hasattr(request.user, 'profile') and request.user.profile.role != 'admin':
+        # Fix permission check to avoid AttributeError if profile is missing
+        user_role = getattr(getattr(request.user, 'profile', None), 'role', 'cashier')
+        if not request.user.is_staff and user_role != 'admin':
             return Response({'error': 'Permission denied'}, status=403)
         settings_obj = StoreSettings.get_settings()
         serializer = StoreSettingsSerializer(settings_obj, data=request.data, partial=True)
@@ -43,12 +45,11 @@ class MeView(APIView):
 
 
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ActivityLog.objects.all()[:50]
+    queryset = ActivityLog.objects.all()
     serializer_class = ActivityLogSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return ActivityLog.objects.all()[:50]
+    # Let DRF handle ordering and pagination automatically
 
 
 class BackupView(APIView):
