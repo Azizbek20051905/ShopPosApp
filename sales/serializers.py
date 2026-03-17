@@ -39,11 +39,17 @@ class SaleItemSerializer(serializers.ModelSerializer):
 class SaleSerializer(serializers.ModelSerializer):
   items = SaleItemInputSerializer(many=True, write_only=True)
   created_at = serializers.DateTimeField(read_only=True)
+  cashier = serializers.CharField(source="cashier.username", read_only=True)
 
   class Meta:
     model = Sale
-    fields = ["id", "total_amount", "total_profit", "created_at", "items"]
-    read_only_fields = ["id", "total_amount", "total_profit", "created_at"]
+    fields = ["id", "cashier", "total_amount", "total_profit", "created_at", "items"]
+    read_only_fields = ["id", "cashier", "total_amount", "total_profit", "created_at"]
+
+  def to_representation(self, instance):
+    data = super().to_representation(instance)
+    data["items"] = SaleItemSerializer(instance.items.all(), many=True).data
+    return data
 
   def create(self, validated_data):
     items_data = validated_data.pop("items", [])
