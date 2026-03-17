@@ -14,18 +14,20 @@ class Category(models.Model):
     return self.name
 
 
-class ProductUnit(models.TextChoices):
-  PCS = "pcs", "Pcs"
-  KG = "kg", "Kg"
+class ProductType(models.TextChoices):
+  PIECE = "piece", "Piece"
+  WEIGHT = "weight", "Weight"
 
 
 class Product(models.Model):
   name = models.CharField(max_length=150)
-  barcode = models.CharField(max_length=64, unique=True)
+  barcode = models.CharField(max_length=64, unique=True, null=True, blank=True)
   category = models.ForeignKey(
     Category,
     related_name="products",
-    on_delete=models.PROTECT,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
   )
   purchase_price = models.DecimalField(
     max_digits=10,
@@ -35,10 +37,10 @@ class Product(models.Model):
     max_digits=10,
     decimal_places=2,
   )
-  unit_type = models.CharField(
+  type = models.CharField(
     max_length=10,
-    choices=ProductUnit.choices,
-    default=ProductUnit.PCS,
+    choices=ProductType.choices,
+    default=ProductType.PIECE,
   )
   # supports fractional quantities for weighted products
   stock_quantity = models.DecimalField(
