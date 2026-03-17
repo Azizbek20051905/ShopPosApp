@@ -7,6 +7,7 @@ from analytics.views import AnalyticsViewSet, DashboardViewSet
 from inventory.views import InventoryViewSet, StockHistoryViewSet
 from products.views import CategoryViewSet, ProductViewSet
 from sales.views import SaleViewSet
+from store.views import StoreSettingsView, MeView, ActivityLogViewSet, BackupView, SyncView
 
 router = DefaultRouter()
 
@@ -24,9 +25,14 @@ router.register(r"inventory/history", StockHistoryViewSet, basename="inventory-h
 router.register(r"inventory", InventoryViewSet, basename="inventory")
 router.register(r"analytics", AnalyticsViewSet, basename="analytics")
 router.register(r"dashboard", DashboardViewSet, basename="dashboard")
+router.register(r"activity", ActivityLogViewSet, basename="activity")
 
 urlpatterns = router.urls + [
     path("auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("accounts/", include("accounts.api_urls")),
+    path("store/", StoreSettingsView.as_view(), name="store-settings"),
+    path("me/", MeView.as_view(), name="me"),
+    path("backup/", BackupView.as_view(), name="backup"),
+    path("sync/", SyncView.as_view(), name="sync"),
 ]

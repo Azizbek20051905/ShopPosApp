@@ -2,6 +2,7 @@ from rest_framework import mixins, viewsets
 
 from .models import Sale
 from .serializers import SaleSerializer
+from store.models import ActivityLog
 
 
 class SaleViewSet(
@@ -21,3 +22,11 @@ class SaleViewSet(
 
   queryset = Sale.objects.select_related("cashier").prefetch_related("items__product").order_by("-created_at")
   serializer_class = SaleSerializer
+
+  def perform_create(self, serializer):
+      sale = serializer.save()
+      ActivityLog.objects.create(
+          user=self.request.user,
+          action='sale',
+          detail=f"Sale #{sale.id} created. Total: {sale.total_amount} UZS"
+      )
