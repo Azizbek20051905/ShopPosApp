@@ -48,6 +48,11 @@ class Product(models.Model):
     decimal_places=3,
     default=0,
   )
+  min_stock = models.DecimalField(
+    max_digits=10,
+    decimal_places=3,
+    default=10.0,
+  )
   image = models.ImageField(
     upload_to="products/",
     blank=True,

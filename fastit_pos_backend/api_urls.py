@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from accounts.views import CustomTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
-from analytics.views import AnalyticsViewSet
+from analytics.views import AnalyticsViewSet, DashboardViewSet
 from inventory.views import InventoryViewSet, StockHistoryViewSet
 from products.views import CategoryViewSet, ProductViewSet
 from sales.views import SaleViewSet
@@ -23,6 +23,7 @@ router.register(r"sales", SaleViewSet, basename="sale")
 router.register(r"inventory/history", StockHistoryViewSet, basename="inventory-history")
 router.register(r"inventory", InventoryViewSet, basename="inventory")
 router.register(r"analytics", AnalyticsViewSet, basename="analytics")
+router.register(r"dashboard", DashboardViewSet, basename="dashboard")
 
 urlpatterns = router.urls + [
     path("auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
