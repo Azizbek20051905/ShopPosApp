@@ -1,7 +1,13 @@
+from django.conf import settings
 from django.db import models
 
 
 class Sale(models.Model):
+  cashier = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    related_name="sales",
+    on_delete=models.PROTECT,
+  )
   total_amount = models.DecimalField(
     max_digits=10,
     decimal_places=2,

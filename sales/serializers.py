@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.db import transaction
 from rest_framework import serializers
 
+from inventory.models import StockHistory, StockHistoryType
 from products.models import Product
 from .models import Sale, SaleItem
 
@@ -101,7 +102,8 @@ class SaleSerializer(serializers.ModelSerializer):
         total_amount += product.sale_price * qty
         total_profit += (product.sale_price - product.purchase_price) * qty
 
-      sale = Sale.objects.create(total_amount=total_amount, total_profit=total_profit)
+      cashier = self.context["request"].user
+      sale = Sale.objects.create(total_amount=total_amount, total_profit=total_profit, cashier=cashier)
 
       # Create sale items (one per request entry, not aggregated) to keep payload traceable.
       for item in items_data:
@@ -115,11 +117,17 @@ class SaleSerializer(serializers.ModelSerializer):
           profit=(product.sale_price - product.purchase_price) * qty,
         )
 
-      # Decrease stock quantities.
+      # Decrease stock quantities and log history.
       for pid, qty in requested_qty.items():
         product = product_by_id[pid]
         product.stock_quantity = product.stock_quantity - qty
         product.save(update_fields=["stock_quantity"])
+
+        StockHistory.objects.create(
+          product=product,
+          change_amount=-qty,
+          type=StockHistoryType.SALE,
+        )
 
     return sale
 
