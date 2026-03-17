@@ -1,8 +1,9 @@
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers import AddStockSerializer
+from .models import StockHistory
+from .serializers import AddStockSerializer, StockHistorySerializer
 
 
 class InventoryViewSet(viewsets.ViewSet):
@@ -29,3 +30,18 @@ class InventoryViewSet(viewsets.ViewSet):
       },
       status=status.HTTP_200_OK,
     )
+
+class StockHistoryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+  """
+  GET /api/inventory/history/
+  GET /api/inventory/history/?product=5
+  """
+
+  serializer_class = StockHistorySerializer
+
+  def get_queryset(self):
+    queryset = StockHistory.objects.select_related("product").all().order_by("-created_at")
+    product_id = self.request.query_params.get("product")
+    if product_id:
+      queryset = queryset.filter(product_id=product_id)
+    return queryset

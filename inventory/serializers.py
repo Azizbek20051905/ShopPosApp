@@ -35,3 +35,11 @@ class AddStockSerializer(serializers.Serializer):
 
     return product
 
+
+class StockHistorySerializer(serializers.ModelSerializer):
+  product_name = serializers.CharField(source="product.name", read_only=True)
+
+  class Meta:
+    model = StockHistory
+    fields = ["id", "product", "product_name", "change_amount", "type", "created_at"]
+    read_only_fields = fields

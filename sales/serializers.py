@@ -9,9 +9,8 @@ from .models import Sale, SaleItem
 
 
 class SaleItemInputSerializer(serializers.Serializer):
-  product_id = serializers.PrimaryKeyRelatedField(
+  product = serializers.PrimaryKeyRelatedField(
     queryset=Product.objects.all(),
-    source="product",
   )
   quantity = serializers.DecimalField(
     max_digits=10,

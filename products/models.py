@@ -15,7 +15,7 @@ class Category(models.Model):
 
 
 class ProductUnit(models.TextChoices):
-  PIECE = "piece", "Piece"
+  PCS = "pcs", "Pcs"
   KG = "kg", "Kg"
 
 
@@ -35,10 +35,10 @@ class Product(models.Model):
     max_digits=10,
     decimal_places=2,
   )
-  unit = models.CharField(
+  unit_type = models.CharField(
     max_length=10,
     choices=ProductUnit.choices,
-    default=ProductUnit.PIECE,
+    default=ProductUnit.PCS,
   )
   # supports fractional quantities for weighted products
   stock_quantity = models.DecimalField(

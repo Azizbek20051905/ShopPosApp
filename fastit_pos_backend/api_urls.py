@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from accounts.views import CustomTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
 from analytics.views import AnalyticsViewSet
-from inventory.views import InventoryViewSet
+from inventory.views import InventoryViewSet, StockHistoryViewSet
 from products.views import CategoryViewSet, ProductViewSet
 from sales.views import SaleViewSet
 
@@ -20,6 +20,7 @@ router = DefaultRouter()
 router.register(r"products", ProductViewSet, basename="product")
 router.register(r"categories", CategoryViewSet, basename="category")
 router.register(r"sales", SaleViewSet, basename="sale")
+router.register(r"inventory/history", StockHistoryViewSet, basename="inventory-history")
 router.register(r"inventory", InventoryViewSet, basename="inventory")
 router.register(r"analytics", AnalyticsViewSet, basename="analytics")
 
