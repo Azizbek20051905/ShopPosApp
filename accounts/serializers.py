@@ -45,6 +45,16 @@ class UserSerializer(serializers.ModelSerializer):
         
         return instance
 
-class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        
+        # Add custom user data into response
+        data['user'] = {
+            'id': self.user.id,
+            'username': self.user.username,
+            'role': self.user.profile.role if hasattr(self.user, 'profile') else 'cashier',
+        }
+        return data
