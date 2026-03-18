@@ -7,7 +7,16 @@ from analytics.views import AnalyticsViewSet, DashboardViewSet
 from inventory.views import InventoryViewSet, StockHistoryViewSet
 from products.views import CategoryViewSet, ProductViewSet
 from sales.views import SaleViewSet
-from store.views import StoreSettingsView, MeView, ActivityLogViewSet, BackupView, SyncView
+from store.views import (
+    StoreSettingsView, 
+    MeView, 
+    ChangePasswordView,
+    PrinterSettingsView,
+    HelpInfoView,
+    ActivityLogViewSet, 
+    BackupView, 
+    SyncView
+)
 
 router = DefaultRouter()
 
@@ -32,7 +41,10 @@ urlpatterns = router.urls + [
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("accounts/", include("accounts.api_urls")),
     path("store/", StoreSettingsView.as_view(), name="store-settings"),
+    path("printer-settings/", PrinterSettingsView.as_view(), name="printer-settings"),
+    path("help/", HelpInfoView.as_view(), name="help"),
     path("me/", MeView.as_view(), name="me"),
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("backup/", BackupView.as_view(), name="backup"),
     path("sync/", SyncView.as_view(), name="sync"),
 ]

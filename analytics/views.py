@@ -12,17 +12,24 @@ from products.models import Product
 
 
 def _get_date_range(period: str):
-    """Returns (start_date, end_date) for the given period."""
-    today = timezone.localdate()
+    """
+    Returns (start_dt, end_dt) as timezone-aware datetimes.
+    - today: start of today (00:00:00) to now
+    - week: last 7 days including today
+    - month: last 30 days including today
+    - year: from Jan 1st of current year to now
+    """
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
     if period == 'today':
-        return today, today
+        return today_start, now
     elif period == 'week':
-        start = today - timedelta(days=today.weekday())  # Monday
-        return start, today
+        return now - timedelta(days=7), now
     elif period == 'year':
-        return today.replace(month=1, day=1), today
+        return now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0), now
     else:  # month (default)
-        return today.replace(day=1), today
+        return now - timedelta(days=30), now
 
 
 class AnalyticsViewSet(viewsets.ViewSet):
@@ -34,9 +41,12 @@ class AnalyticsViewSet(viewsets.ViewSet):
 
     def list(self, request):
         period = request.query_params.get('period', 'month')
-        start_date, end_date = _get_date_range(period)
+        start_dt, end_dt = _get_date_range(period)
+        
+        # Log for debugging
+        print(f"DEBUG: Period={period}, Start={start_dt}, End={end_dt}")
 
-        sales_qs = Sale.objects.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
+        sales_qs = Sale.objects.filter(created_at__range=(start_dt, end_dt))
 
         # --- KPIs ---
         revenue = sales_qs.aggregate(s=Coalesce(Sum('total_amount'), Value(0, output_field=DecimalField())))['s']
@@ -60,7 +70,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         # --- Category Distribution ---
         cat_qs = (
             SaleItem.objects
-            .filter(sale__created_at__date__gte=start_date, sale__created_at__date__lte=end_date)
+            .filter(sale__created_at__range=(start_dt, end_dt))
             .values(category=F('product__category__name'))
             .annotate(total=Coalesce(Sum('price_at_sale'), Value(0, output_field=DecimalField())))
             .order_by('-total')
@@ -75,7 +85,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         # --- Top Products ---
         top_items = (
             SaleItem.objects
-            .filter(sale__created_at__date__gte=start_date, sale__created_at__date__lte=end_date)
+            .filter(sale__created_at__range=(start_dt, end_dt))
             .values('product_id', 'product__name')
             .annotate(
                 units=Coalesce(Sum('quantity'), Value(0, output_field=DecimalField())),
@@ -92,8 +102,8 @@ class AnalyticsViewSet(viewsets.ViewSet):
             for item in top_items
         ]
 
-        # --- Recent Sales ---
-        recent_qs = Sale.objects.order_by('-created_at')[:5]
+        # --- Recent Sales (within selected period) ---
+        recent_qs = sales_qs.order_by('-created_at')[:5]
         recent_sales = [
             {
                 'id': s.id,

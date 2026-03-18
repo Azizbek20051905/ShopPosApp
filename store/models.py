@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 
 class StoreSettings(models.Model):
     name = models.CharField(max_length=200, default="My Store")
+    phone = models.CharField(max_length=20, default="")
+    address = models.CharField(max_length=500, default="")
     city = models.CharField(max_length=100, default="Tashkent")
     district = models.CharField(max_length=100, default="")
     currency = models.CharField(max_length=10, default="UZS")
@@ -19,6 +21,40 @@ class StoreSettings(models.Model):
     @classmethod
     def get_settings(cls):
         """Return the single settings object, creating it if it doesn't exist."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PrinterSettings(models.Model):
+    PAPER_SIZES = [
+        ('58mm', '58mm'),
+        ('80mm', '80mm'),
+    ]
+    printer_name = models.CharField(max_length=200, default="Default Printer")
+    printer_ip = models.GenericIPAddressField(null=True, blank=True)
+    paper_size = models.CharField(max_length=10, choices=PAPER_SIZES, default='58mm')
+    auto_print = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Printer Settings"
+        verbose_name_plural = "Printer Settings"
+
+    @classmethod
+    def get_settings(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class HelpInfo(models.Model):
+    telegram = models.CharField(max_length=100, default="@support")
+    email = models.EmailField(default="support@pos.com")
+
+    class Meta:
+        verbose_name = "Help Info"
+        verbose_name_plural = "Help Info"
+
+    @classmethod
+    def get_info(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
