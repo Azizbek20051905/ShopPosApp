@@ -3,6 +3,8 @@ from .models import StoreSettings, ActivityLog, PrinterSettings, HelpInfo
 
 
 class StoreSettingsSerializer(serializers.ModelSerializer):
+    tax_percent = serializers.FloatField()
+    
     class Meta:
         model = StoreSettings
         fields = ['id', 'name', 'phone', 'address', 'city', 'district', 'currency', 'tax_percent']
