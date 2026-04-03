@@ -10,19 +10,20 @@ from .serializers import (
 )
 from django.contrib.auth.models import User
 from accounts.serializers import UserSerializer
+from accounts.permissions import HasStaffPermission
 
 
 class StoreSettingsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_view_settings', False):
+            return Response({'error': 'Permission denied'}, status=403)
         settings_obj = StoreSettings.get_settings()
         return Response(StoreSettingsSerializer(settings_obj).data)
 
     def put(self, request):
-        # Fix permission check to avoid AttributeError if profile is missing
-        user_role = getattr(getattr(request.user, 'profile', None), 'role', 'cashier')
-        if not request.user.is_staff and user_role != 'admin':
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_edit_settings', False):
             return Response({'error': 'Permission denied'}, status=403)
         settings_obj = StoreSettings.get_settings()
         serializer = StoreSettingsSerializer(settings_obj, data=request.data, partial=True)
@@ -91,10 +92,14 @@ class PrinterSettingsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_view_settings', False):
+            return Response({'error': 'Permission denied'}, status=403)
         obj = PrinterSettings.get_settings()
         return Response(PrinterSettingsSerializer(obj).data)
 
     def put(self, request):
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_edit_settings', False):
+            return Response({'error': 'Permission denied'}, status=403)
         obj = PrinterSettings.get_settings()
         serializer = PrinterSettingsSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
@@ -112,17 +117,21 @@ class HelpInfoView(APIView):
 
 
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ActivityLog.objects.all()
+    queryset = ActivityLog.objects.all().select_related('user').order_by('-created_at')
     serializer_class = ActivityLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    # Let DRF handle ordering and pagination automatically
+    permission_classes = [HasStaffPermission]
+    permission_map = {
+        'list': 'can_view_users',
+        'retrieve': 'can_view_users',
+    }
 
 
 class BackupView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_edit_settings', False):
+            return Response({'error': 'Permission denied'}, status=403)
         return Response({'message': 'Backup created successfully in cloud storage.'})
 
 
@@ -130,4 +139,6 @@ class SyncView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        if not request.user.is_superuser and not getattr(request.user.profile, 'can_edit_settings', False):
+            return Response({'error': 'Permission denied'}, status=403)
         return Response({'message': 'Data synchronization complete.'})

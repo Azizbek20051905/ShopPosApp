@@ -22,8 +22,12 @@ def _get_base_date(request):
             pass
     return timezone.now()
 
+from accounts.permissions import HasStaffPermission
+
+
 class AnalyticsViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasStaffPermission]
+    permission_map = {'list': 'can_view_analytics'}
 
     def list(self, request):
         period = request.query_params.get('period', 'month')
@@ -160,7 +164,8 @@ class AnalyticsViewSet(viewsets.ViewSet):
 
 
 class DashboardViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasStaffPermission]
+    permission_map = {'list': 'can_view_analytics'}
 
     def list(self, request):
         today = timezone.localdate()

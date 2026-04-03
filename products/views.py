@@ -7,14 +7,35 @@ from .serializers import CategorySerializer, ProductSerializer
 from store.models import ActivityLog
 
 
+from accounts.permissions import HasStaffPermission
+
 class CategoryViewSet(viewsets.ModelViewSet):
   queryset = Category.objects.all().order_by("name")
   serializer_class = CategorySerializer
+  permission_classes = [HasStaffPermission]
+  permission_map = {
+      'list': 'can_view_products',
+      'retrieve': 'can_view_products',
+      'create': 'can_add_product',
+      'update': 'can_edit_product',
+      'partial_update': 'can_edit_product',
+      'destroy': 'can_delete_product',
+  }
 
 
 class ProductViewSet(viewsets.ModelViewSet):
   queryset = Product.objects.select_related("category").all().order_by("name")
   serializer_class = ProductSerializer
+  permission_classes = [HasStaffPermission]
+  permission_map = {
+      'list': 'can_view_products',
+      'retrieve': 'can_view_products',
+      'barcode': 'can_view_products',
+      'create': 'can_add_product',
+      'update': 'can_edit_product',
+      'partial_update': 'can_edit_product',
+      'destroy': 'can_delete_product',
+  }
 
   def perform_create(self, serializer):
       product = serializer.save()
