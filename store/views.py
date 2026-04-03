@@ -46,7 +46,7 @@ class MeView(APIView):
             'email': user.email,
             'role': user.profile.role if hasattr(user, 'profile') else 'cashier',
             'phone': user.profile.phone if hasattr(user, 'profile') else '',
-            'image': request.build_absolute_uri(user.profile.image.url) if hasattr(user, 'profile') and user.profile.image else None,
+            'avatar': request.build_absolute_uri(user.profile.avatar.url) if hasattr(user, 'profile') and user.profile.avatar else None,
         }
         return Response(data)
 
@@ -61,8 +61,8 @@ class MeView(APIView):
         if hasattr(user, 'profile'):
             profile = user.profile
             profile.phone = request.data.get('phone', profile.phone)
-            if 'image' in request.FILES:
-                profile.image = request.FILES['image']
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
             profile.save()
             
         return self.get(request)
