@@ -4,11 +4,12 @@ from .serializers import UserSerializer, CustomTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .permissions import HasStaffPermission
+from tenants.utils import TenantViewSetMixin
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = User.objects.all().select_related('profile').order_by('id')
     serializer_class = UserSerializer
     permission_classes = [HasStaffPermission]
@@ -20,3 +21,12 @@ class UserViewSet(viewsets.ModelViewSet):
         'partial_update': 'can_edit_user',
         'destroy': 'can_delete_user',
     }
+
+    def perform_create(self, serializer):
+        tenant = self.request.user.profile.tenant
+        user = serializer.save()
+        # The signal in accounts/models.py creates the profile, 
+        # but we need to set the tenant.
+        if hasattr(user, 'profile'):
+            user.profile.tenant = tenant
+            user.profile.save()

@@ -15,6 +15,7 @@ class Profile(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.SET_NULL, null=True, blank=True, related_name='profiles')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=CASHIER)
     phone = models.CharField(max_length=20, blank=True, null=True)
     avatar = models.ImageField(upload_to='profiles/', blank=True, null=True)

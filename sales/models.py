@@ -1,8 +1,9 @@
 from django.conf import settings
 from django.db import models
+from tenants.models import TenantAwareModel
 
 
-class Sale(models.Model):
+class Sale(TenantAwareModel):
   cashier = models.ForeignKey(
     settings.AUTH_USER_MODEL,
     related_name="sales",

@@ -5,6 +5,7 @@ from store.models import ActivityLog
 
 from .models import StockHistory
 from .serializers import AddStockSerializer, StockHistorySerializer
+from tenants.utils import TenantViewSetMixin
 
 
 class InventoryViewSet(viewsets.ViewSet):
@@ -27,6 +28,7 @@ class InventoryViewSet(viewsets.ViewSet):
     
     # Log the activity
     ActivityLog.objects.create(
+        tenant=self.request.user.profile.tenant,
         user=self.request.user,
         action='stock_update',
         detail=f"Stock for '{product.name}' increased by {serializer.validated_data['quantity']}."
@@ -40,13 +42,14 @@ class InventoryViewSet(viewsets.ViewSet):
       status=status.HTTP_200_OK,
     )
 
-class StockHistoryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class StockHistoryViewSet(TenantViewSetMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
   """
   GET /api/inventory/history/
   GET /api/inventory/history/?product=5
   """
 
   serializer_class = StockHistorySerializer
+  queryset = StockHistory.objects.select_related("product").all()
 
   def get_queryset(self):
     queryset = StockHistory.objects.select_related("product").all().order_by("-created_at")

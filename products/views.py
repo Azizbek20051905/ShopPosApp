@@ -5,11 +5,12 @@ from rest_framework.response import Response
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 from store.models import ActivityLog
+from tenants.utils import TenantViewSetMixin
 
 
 from accounts.permissions import HasStaffPermission
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
   queryset = Category.objects.all().order_by("name")
   serializer_class = CategorySerializer
   permission_classes = [HasStaffPermission]
@@ -23,8 +24,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
   }
 
 
-class ProductViewSet(viewsets.ModelViewSet):
-  queryset = Product.objects.select_related("category").all().order_by("name")
+class ProductViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
+  queryset = Product.objects.select_related("category").all()
   serializer_class = ProductSerializer
   permission_classes = [HasStaffPermission]
   permission_map = {

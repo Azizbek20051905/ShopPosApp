@@ -3,11 +3,13 @@ from rest_framework import mixins, viewsets
 from .models import Sale
 from .serializers import SaleSerializer
 from store.models import ActivityLog
+from tenants.utils import TenantViewSetMixin
 
 
 from accounts.permissions import HasStaffPermission
 
 class SaleViewSet(
+    TenantViewSetMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -23,8 +25,11 @@ class SaleViewSet(
   }
 
   def perform_create(self, serializer):
-      sale = serializer.save()
+      # TenantViewSetMixin handles adding the tenant
+      tenant = self.request.user.profile.tenant
+      sale = serializer.save(tenant=tenant)
       ActivityLog.objects.create(
+          tenant=tenant,
           user=self.request.user,
           action='sale',
           detail=f"Sale #{sale.id} created. Total: {sale.total_amount} UZS"

@@ -1,4 +1,5 @@
 from django.db import models
+from tenants.models import TenantAwareModel
 
 
 class StockHistoryType(models.TextChoices):
@@ -7,7 +8,7 @@ class StockHistoryType(models.TextChoices):
   ADJUSTMENT = "adjustment", "Adjustment"
 
 
-class StockHistory(models.Model):
+class StockHistory(TenantAwareModel):
   product = models.ForeignKey(
     "products.Product",
     related_name="stock_history",

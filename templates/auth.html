@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastIT POS - Get Started</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/htmx.org@latest"></script>
+</head>
+<body style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="glass-card" style="width: 100%; max-width: 480px; padding: 3rem;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <a href="/" class="logo" style="justify-content: center; margin-bottom: 1rem;">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">FastIT POS</span>
+            </a>
+            <h2 id="auth-title">Create your store</h2>
+            <p id="auth-subtitle" style="color: var(--text-secondary); margin-top: 0.5rem;">Join 1,000+ businesses using FastIT.</p>
+        </div>
+
+        <form id="auth-form">
+            <div id="register-fields">
+                <div class="form-group">
+                    <label for="store_name">Store Name</label>
+                    <input type="text" id="store_name" name="store_name" class="form-input" placeholder="My Awesome Store" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-input" placeholder="alex123" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;">
+                Get Started Free
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <p id="toggle-text" style="color: var(--text-secondary); font-size: 0.875rem;">
+                Already have a store? <a href="#" id="toggle-auth" style="color: var(--primary); font-weight: 600; text-decoration: none;">Login instead</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const registerFields = document.getElementById('register-fields');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const toggleText = document.getElementById('toggle-text');
+        const authForm = document.getElementById('auth-form');
+        const submitBtn = authForm.querySelector('button');
+
+        let isLogin = false;
+
+        toggleAuth.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            
+            if (isLogin) {
+                authTitle.innerText = "Welcome back";
+                authSubtitle.innerText = "Login to your dashboard.";
+                registerFields.style.display = 'none';
+                submitBtn.innerText = "Login";
+                toggleText.innerHTML = 'Don\'t have a store? <a href="#" id="toggle-auth" style="color: var(--primary); font-weight: 600; text-decoration: none;">Create one free</a>';
+            } else {
+                authTitle.innerText = "Create your store";
+                authSubtitle.innerText = "Join 1,000+ businesses using FastIT.";
+                registerFields.style.display = 'block';
+                submitBtn.innerText = "Get Started Free";
+                toggleText.innerHTML = 'Already have a store? <a href="#" id="toggle-auth" style="color: var(--primary); font-weight: 600; text-decoration: none;">Login instead</a>';
+            }
+            // Re-attach event listener because innerHTML wipes it
+            document.getElementById('toggle-auth').addEventListener('click', arguments.callee);
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(authForm);
+            const data = Object.fromEntries(formData);
+            
+            const url = isLogin ? '/api/token/' : '/api/tenants/register/';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    if (isLogin) {
+                        localStorage.setItem('token', result.access);
+                        window.location.href = '/dashboard';
+                    } else {
+                        alert("Storage created! Now login to continue.");
+                        location.reload();
+                    }
+                } else {
+                    alert(result.detail || "Something went wrong.");
+                }
+            } catch (err) {
+                alert("Connection error.");
+            }
+        });
+    </script>
+</body>
+</html>

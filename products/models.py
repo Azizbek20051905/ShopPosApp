@@ -1,8 +1,9 @@
 from django.db import models
+from tenants.models import TenantAwareModel
 
 
-class Category(models.Model):
-  name = models.CharField(max_length=100, unique=True)
+class Category(TenantAwareModel):
+  name = models.CharField(max_length=100)
   created_at = models.DateTimeField(auto_now_add=True)
 
   class Meta:
@@ -19,9 +20,9 @@ class ProductType(models.TextChoices):
   WEIGHT = "weight", "Weight"
 
 
-class Product(models.Model):
+class Product(TenantAwareModel):
   name = models.CharField(max_length=150)
-  barcode = models.CharField(max_length=64, unique=True, null=True, blank=True)
+  barcode = models.CharField(max_length=64, null=True, blank=True)
   category = models.ForeignKey(
     Category,
     related_name="products",

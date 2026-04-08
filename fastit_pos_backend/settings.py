@@ -51,6 +51,10 @@ INSTALLED_APPS = [
     'inventory',
     'analytics',
     'store',
+    'tenants',
+    'subscriptions',
+    'payments',
+    'web',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +64,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'subscriptions.middleware.SubscriptionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

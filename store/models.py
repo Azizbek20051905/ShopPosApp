@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+from tenants.models import TenantAwareModel
 
 
-class StoreSettings(models.Model):
+class StoreSettings(TenantAwareModel):
     name = models.CharField(max_length=200, default="My Store")
     phone = models.CharField(max_length=20, default="")
     address = models.CharField(max_length=500, default="")
@@ -19,13 +20,13 @@ class StoreSettings(models.Model):
         return self.name
 
     @classmethod
-    def get_settings(cls):
-        """Return the single settings object, creating it if it doesn't exist."""
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def get_settings(cls, tenant):
+        """Return the settings object for the given tenant, creating it if it doesn't exist."""
+        obj, _ = cls.objects.get_or_create(tenant=tenant)
         return obj
 
 
-class PrinterSettings(models.Model):
+class PrinterSettings(TenantAwareModel):
     PAPER_SIZES = [
         ('58mm', '58mm'),
         ('80mm', '80mm'),
@@ -40,8 +41,8 @@ class PrinterSettings(models.Model):
         verbose_name_plural = "Printer Settings"
 
     @classmethod
-    def get_settings(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def get_settings(cls, tenant):
+        obj, _ = cls.objects.get_or_create(tenant=tenant)
         return obj
 
 
@@ -59,7 +60,7 @@ class HelpInfo(models.Model):
         return obj
 
 
-class ActivityLog(models.Model):
+class ActivityLog(TenantAwareModel):
     ACTIONS = [
         ('sale', 'Sale Created'),
         ('product_add', 'Product Added'),

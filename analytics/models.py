@@ -1,8 +1,9 @@
 from django.db import models
+from tenants.models import TenantAwareModel
 
 
-class DailySales(models.Model):
-  date = models.DateField(unique=True)
+class DailySales(TenantAwareModel):
+  date = models.DateField()
   total_sales = models.DecimalField(
     max_digits=10,
     decimal_places=2,
@@ -15,6 +16,7 @@ class DailySales(models.Model):
   )
 
   class Meta:
+    unique_together = ("date", "tenant")
     verbose_name = "Daily sales"
     verbose_name_plural = "Daily sales"
     ordering = ["-date"]

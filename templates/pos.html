@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastIT POS - Checkout</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .pos-grid { display: grid; grid-template-columns: 1fr 400px; height: calc(100vh - 80px); gap: 1rem; padding: 1rem; }
+        .product-card { background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 1rem; cursor: pointer; transition: all 0.2s; }
+        .product-card:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .category-pill { padding: 0.5rem 1.25rem; border-radius: 20px; background: var(--glass); color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+        .category-pill.active { background: var(--primary); color: white; }
+    </style>
+</head>
+<body x-data="posApp()" x-init="init()">
+    <nav style="padding: 1rem 0; border-bottom: 1px solid var(--border);">
+        <div class="container nav-content">
+            <div class="logo">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">POS Terminal</span>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-input" style="width: 300px; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
+                    <i data-lucide="search" style="width: 16px; color: var(--text-secondary);"></i>
+                    <input type="text" placeholder="Search product or barcode..." style="background: none; border: none; color: white; outline: none; width: 100%;">
+                </div>
+                <button class="btn btn-outline" @click="logout()"><i data-lucide="log-out" style="width: 16px;"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="pos-grid">
+        <!-- Products Area -->
+        <main style="overflow-y: auto; padding-right: 1rem;">
+            <div style="display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 1rem; margin-bottom: 1rem;">
+                <div class="category-pill active">All Categories</div>
+                <template x-for="category in categories" :key="category.id">
+                    <div class="category-pill" x-text="category.name"></div>
+                </template>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                <template x-for="product in products" :key="product.id">
+                    <div class="product-card" @click="addToCart(product)">
+                        <div style="height: 120px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="image" style="color: var(--border);"></i>
+                        </div>
+                        <h4 x-text="product.name" style="margin-bottom: 0.25rem;"></h4>
+                        <p x-text="formatPrice(product.sale_price)" style="color: var(--primary); font-weight: 700;"></p>
+                        <p x-text="'Stock: ' + product.stock_quantity" style="font-size: 0.75rem; color: var(--text-secondary);"></p>
+                    </div>
+                </template>
+            </div>
+        </main>
+
+        <!-- Cart Area -->
+        <aside class="glass-card" style="display: flex; flex-direction: column; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between;">
+                Current Order 
+                <span style="font-size: 0.875rem; color: var(--text-secondary);" x-text="'Items: ' + cart.length"></span>
+            </h3>
+
+            <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 1.5rem;">
+                <template x-for="(item, index) in cart" :key="index">
+                    <div class="cart-item">
+                        <div>
+                            <div x-text="item.name" style="font-weight: 600;"></div>
+                            <div style="font-size: 0.8125rem; color: var(--text-secondary);">
+                                <span x-text="item.quantity"></span> x <span x-text="formatPrice(item.sale_price)"></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span x-text="formatPrice(item.sale_price * item.quantity)" style="font-weight: 600;"></span>
+                            <button @click="removeFromCart(index)" style="background: none; border: none; color: #ef4444; cursor: pointer;">
+                                <i data-lucide="trash-2" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="cart.length === 0" style="text-align: center; color: var(--text-secondary); margin-top: 4rem;">
+                    <i data-lucide="shopping-bag" style="width: 48px; height: 48px; opacity: 0.2; display: block; margin: 0 auto 1rem;"></i>
+                    Your cart is empty
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                    <span>Subtotal</span>
+                    <span x-text="formatPrice(total)"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 800;">
+                    <span>Total</span>
+                    <span class="gradient-text" x-text="formatPrice(total)"></span>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; padding: 1rem;" :disabled="cart.length === 0" @click="checkout()">
+                    Complete Order
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Payment Success Modal -->
+    <template x-if="showSuccess">
+        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+            <div class="glass-card" style="max-width: 400px; text-align: center;">
+                <i data-lucide="check-circle" style="width: 64px; height: 64px; color: var(--accent); margin-bottom: 1.5rem;"></i>
+                <h2>Sale Completed!</h2>
+                <p style="color: var(--text-secondary); margin: 1rem 0 2rem;">Order #${orderId} was processed successfully.</p>
+                <button class="btn btn-primary" @click="showSuccess = false" style="width: 100%;">Done</button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        function posApp() {
+            return {
+                products: [],
+                categories: [],
+                cart: [],
+                total: 0,
+                showSuccess: false,
+                orderId: '',
+                
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) window.location.href = '/login';
+                    
+                    await Promise.all([this.loadProducts(), this.loadCategories()]);
+                    lucide.createIcons();
+                },
+                
+                async loadProducts() {
+                    const res = await this.apiFetch('/api/products/products/');
+                    this.products = res.results || [];
+                },
+                
+                async loadCategories() {
+                    const res = await this.apiFetch('/api/products/categories/');
+                    this.categories = res.results || [];
+                },
+                
+                addToCart(product) {
+                    const existing = this.cart.find(i => i.id === product.id);
+                    if (existing) {
+                        existing.quantity++;
+                    } else {
+                        this.cart.push({ ...product, quantity: 1 });
+                    }
+                    this.calculateTotal();
+                    setTimeout(() => lucide.createIcons(), 0);
+                },
+                
+                removeFromCart(index) {
+                    this.cart.splice(index, 1);
+                    this.calculateTotal();
+                },
+                
+                calculateTotal() {
+                    this.total = this.cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
+                },
+                
+                formatPrice(price) {
+                    return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS' }).format(price);
+                },
+                
+                async checkout() {
+                    const payload = {
+                        items: this.cart.map(i => ({ product: i.id, quantity: i.quantity })),
+                        total_amount: this.total,
+                        total_profit: this.total * 0.25 // Simplified logic for demo
+                    };
+                    
+                    const res = await this.apiFetch('/api/sales/sales/', 'POST', payload);
+                    if (res.id) {
+                        this.orderId = res.id;
+                        this.cart = [];
+                        this.total = 0;
+                        this.showSuccess = true;
+                        setTimeout(() => lucide.createIcons(), 0);
+                    }
+                },
+                
+                async apiFetch(url, method = 'GET', body = null) {
+                    const token = localStorage.getItem('token');
+                    const options = {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    };
+                    if (body) options.body = JSON.stringify(body);
+                    
+                    const res = await fetch(url, options);
+                    if (res.status === 402) {
+                        alert("Subscription expired! Please renew.");
+                        window.location.href = '/billing';
+                    }
+                    return res.json();
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    window.location.href = '/';
+                }
+            };
+        }
+    </script>
+</body>
+</html>
