@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_with_redirect_url # actually use regular render
 
 def landing_view(request):
     return render(request, 'landing.html')
