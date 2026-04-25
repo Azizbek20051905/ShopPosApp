@@ -225,12 +225,29 @@ class DashboardViewSet(viewsets.ViewSet):
         now = timezone.localtime()
         store_status = "Open" if 8 <= now.hour < 22 else "Closed"
 
+        # 10. Recent Sales (last 5)
+        recent_qs = Sale.objects.all()
+        if tenant:
+            recent_qs = recent_qs.filter(tenant=tenant)
+        recent_qs = recent_qs.order_by('-created_at')[:5]
+        
+        recent_sales = [
+            {
+                'id': s.id, 
+                'total': float(s.total_amount), 
+                'items': s.items.count(), 
+                'created_at': s.created_at.isoformat()
+            }
+            for s in recent_qs
+        ]
+
         return Response({
             'today_sales': float(sales_total),
             'today_profit': float(profit_total),
             'yesterday_sales': float(yest_total),
             'total_orders': total_orders,
             'low_stock': low_stock_data,
+            'recent_sales': recent_sales,
             'staff_count': staff_count,
             'top_product': top_product_data['product__name'] if top_product_data else "No sales yet",
             'top_product_qty': float(top_product_data['qty']) if top_product_data else 0,
