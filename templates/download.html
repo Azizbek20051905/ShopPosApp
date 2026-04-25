@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download FastIT POS App - Premium POS Experience</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .download-hero {
+            padding-top: 140px;
+            text-align: center;
+        }
+        .version-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .version-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .steps-container {
+            margin-top: 4rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        .step-card {
+            position: relative;
+            padding-top: 3.5rem;
+        }
+        .step-number {
+            position: absolute;
+            top: 1.5rem;
+            left: 2.5rem;
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        .warning-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-top: 3rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        .warning-box i {
+            color: #f59e0b;
+            flex-shrink: 0;
+        }
+        .warning-box p {
+            font-size: 0.9rem;
+            color: #d97706;
+            margin: 0;
+        }
+        .ios-section {
+            margin-top: 6rem;
+            border-top: 1px solid var(--border);
+            padding-top: 6rem;
+            text-align: center;
+        }
+        .device-mockup {
+            max-width: 400px;
+            margin: 2rem auto;
+            position: relative;
+        }
+        .device-mockup img {
+            width: 100%;
+            border-radius: 32px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-anim {
+            animation: float 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    
+    <nav id="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">FastIT POS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#pricing">Pricing</a></li>
+                <li><a href="/login/" class="btn btn-outline">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Android Section -->
+        <section class="download-hero">
+            <div class="platform-badge animate-fade-up">
+                <i data-lucide="smartphone"></i> Android Edition
+            </div>
+            <h1 class="animate-fade-up">Download <span class="gradient-text">FastIT POS</span> App</h1>
+            <p class="animate-fade-up" style="animation-delay: 0.1s;">Take your business anywhere with our powerful Android application. Optimized for performance and stability.</p>
+            
+            <div class="animate-fade-up" style="animation-delay: 0.2s; margin-top: 3rem;">
+                <a href="/media/fastit_pos_latest.apk" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.2rem;">
+                    <i data-lucide="download"></i> Download APK
+                </a>
+                
+                <div class="version-info">
+                    <span><i data-lucide="info" style="width: 16px;"></i> Version 2.4.0</span>
+                    <span><i data-lucide="calendar" style="width: 16px;"></i> Updated Apr 8, 2026</span>
+                    <span><i data-lucide="hard-drive" style="width: 16px;"></i> 24.5 MB</span>
+                </div>
+            </div>
+
+            <div class="warning-box animate-fade-up" style="animation-delay: 0.3s;">
+                <i data-lucide="alert-triangle"></i>
+                <div style="text-align: left;">
+                    <p><strong>Note for Android Users:</strong> Since this is a direct APK download, you may need to enable "Install from Unknown Sources" in your device settings to proceed with the installation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Installation Guide -->
+        <section id="guide">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h2 style="font-size: 2rem;">Installation <span class="gradient-text">Guide</span></h2>
+                <p style="color: var(--text-secondary);">Follow these simple steps to get started</p>
+            </div>
+
+            <div class="steps-container">
+                <div class="glass-card step-card">
+                    <div class="step-number">1</div>
+                    <i data-lucide="download-cloud" style="color: var(--primary); margin-bottom: 1rem;"></i>
+                    <h3>Download APK</h3>
+                    <p style="color: var(--text-secondary); margin-top: 1rem;">Click the download button above to get the latest version of the app.</p>
+                </div>
+                <div class="glass-card step-card">
+                    <div class="step-number">2</div>
+                    <i data-lucide="settings" style="color: var(--secondary); margin-bottom: 1rem;"></i>
+                    <h3>Allow Sources</h3>
+                    <p style="color: var(--text-secondary); margin-top: 1rem;">Go to Settings > Security and enable "Unknown Sources" if prompted during installation.</p>
+                </div>
+                <div class="glass-card step-card">
+                    <div class="step-number">3</div>
+                    <i data-lucide="check-circle" style="color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3>Install & Launch</h3>
+                    <p style="color: var(--text-secondary); margin-top: 1rem;">Open the downloaded file and tap "Install". Once finished, open FastIT POS and log in.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- iOS Section -->
+        <section class="ios-section">
+            <div class="platform-badge animate-fade-up">
+                <i data-lucide="apple"></i> iOS & Web
+            </div>
+            <h2 class="animate-fade-up">Using an <span class="gradient-text">iPhone?</span></h2>
+            <p class="animate-fade-up" style="max-width: 600px; margin: 1rem auto; color: var(--text-secondary);">
+                Our iOS experience is delivered through our ultra-responsive progressive web app. No download required—just open and start selling.
+            </p>
+            
+            <div class="animate-fade-up" style="margin-top: 3rem;">
+                <a href="/pos/" class="btn btn-outline" style="padding: 1rem 2.5rem;">
+                    <i data-lucide="external-link"></i> Open Web App
+                </a>
+            </div>
+
+            <p style="margin-top: 2rem; color: var(--text-secondary); font-size: 0.875rem;">
+                <i data-lucide="help-circle" style="width: 14px; vertical-align: middle;"></i> 
+                Pro tip: Use "Add to Home Screen" in Safari for the full app experience.
+            </p>
+        </section>
+    </main>
+
+    <footer class="container" style="padding: 4rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-secondary); margin-top: 4rem;">
+        <div style="margin-bottom: 2rem;">
+            <a href="/" class="logo" style="justify-content: center;">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">FastIT POS</span>
+            </a>
+        </div>
+        <p>&copy; 2026 FastIT Solution. All rights reserved.</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

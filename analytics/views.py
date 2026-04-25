@@ -170,46 +170,70 @@ class DashboardViewSet(viewsets.ViewSet):
     def list(self, request):
         today = timezone.localdate()
         yesterday = today - timedelta(days=1)
+        
+        # User's tenant
+        tenant = request.user.profile.tenant if hasattr(request.user, 'profile') else None
 
         # 1. Today's Sales
-        today_sales = Sale.objects.filter(created_at__date=today).aggregate(
+        today_sales = Sale.objects.filter(created_at__date=today)
+        if tenant:
+            today_sales = today_sales.filter(tenant=tenant)
+            
+        sales_total = today_sales.aggregate(
             s=Coalesce(Sum('total_amount'), Value(0, output_field=DecimalField())))['s']
 
         # 2. Yesterday's Sales
-        yesterday_sales = Sale.objects.filter(created_at__date=yesterday).aggregate(
+        yesterday_sales = Sale.objects.filter(created_at__date=yesterday)
+        if tenant:
+            yesterday_sales = yesterday_sales.filter(tenant=tenant)
+        yest_total = yesterday_sales.aggregate(
             s=Coalesce(Sum('total_amount'), Value(0, output_field=DecimalField())))['s']
 
         # 3. Today's Profit
-        today_profit = Sale.objects.filter(created_at__date=today).aggregate(
+        profit_total = today_sales.aggregate(
             s=Coalesce(Sum('total_profit'), Value(0, output_field=DecimalField())))['s']
 
         # 4. Total Orders Today
-        total_orders = Sale.objects.filter(created_at__date=today).count()
+        total_orders = today_sales.count()
 
         # 5. Low Stock Products
-        low_stock_qs = Product.objects.filter(stock_quantity__lte=F('min_stock'))[:5]
+        low_stock_qs = Product.objects.filter(stock_quantity__lte=F('min_stock'))
+        if tenant:
+            low_stock_qs = low_stock_qs.filter(tenant=tenant)
         low_stock_data = [
             {'id': p.id, 'name': p.name, 'stock': float(p.stock_quantity)}
-            for p in low_stock_qs
+            for p in low_stock_qs[:5]
         ]
 
-        # 6. Recent Sales
-        recent_sales_qs = Sale.objects.order_by('-created_at')[:5]
-        recent_sales_data = [
-            {
-                'id': s.id,
-                'total': float(s.total_amount),
-                'items': s.items.count(),
-                'created_at': s.created_at.isoformat(),
-            }
-            for s in recent_sales_qs
-        ]
+        # 6. Top Product Today
+        top_product_item = SaleItem.objects.filter(sale__created_at__date=today)
+        if tenant:
+            top_product_item = top_product_item.filter(sale__tenant=tenant)
+        
+        top_product_data = top_product_item.values('product__name').annotate(
+            qty=Sum('quantity')).order_by('-qty').first()
+        
+        # 7. Peak Hour
+        peak_hour_data = today_sales.annotate(hour=ExtractHour('created_at')).values('hour').annotate(
+            count=Count('id')).order_by('-count').first()
+        
+        # 8. Active Staff (total staff for tenant)
+        from django.contrib.auth.models import User
+        staff_count = User.objects.filter(profile__tenant=tenant).count() if tenant else 1
+
+        # 9. Store Status (Mocked: 8AM to 10PM)
+        now = timezone.localtime()
+        store_status = "Open" if 8 <= now.hour < 22 else "Closed"
 
         return Response({
-            'today_sales': float(today_sales),
-            'yesterday_sales': float(yesterday_sales),
-            'today_profit': float(today_profit),
+            'today_sales': float(sales_total),
+            'today_profit': float(profit_total),
+            'yesterday_sales': float(yest_total),
             'total_orders': total_orders,
             'low_stock': low_stock_data,
-            'recent_sales': recent_sales_data,
+            'staff_count': staff_count,
+            'top_product': top_product_data['product__name'] if top_product_data else "No sales yet",
+            'top_product_qty': float(top_product_data['qty']) if top_product_data else 0,
+            'peak_hour': f"{peak_hour_data['hour']}:00 - {peak_hour_data['hour']+1}:00" if peak_hour_data else "N/A",
+            'store_status': store_status
         })

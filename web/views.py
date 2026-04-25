@@ -6,9 +6,17 @@ def landing_view(request):
 def auth_view(request):
     return render(request, 'auth.html')
 
+def dashboard_view(request):
+    return render(request, 'dashboard.html')
+
 def pos_view(request):
-    # The actual authentication is handled by JS in the template
     return render(request, 'pos.html')
 
+def manage_view(request):
+    return render(request, 'management.html')
+
 def billing_view(request):
-    return render(request, 'billing.html') # Need to create this
+    return render(request, 'billing.html')
+
+def download_view(request):
+    return render(request, 'download.html')

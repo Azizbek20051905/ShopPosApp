@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FastIT POS - The Ultimate SaaS POS Solution</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -20,8 +21,9 @@
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#pricing">Pricing</a></li>
-                <li><a href="/login" class="btn btn-outline">Login</a></li>
-                <li><a href="/register" class="btn btn-primary">Start Free Trial</a></li>
+                <li><a href="/download/">Download</a></li>
+                <li><a href="/login/" class="btn btn-outline">Login</a></li>
+                <li><a href="/register/" class="btn btn-primary">Start Free Trial</a></li>
             </ul>
         </div>
     </nav>
@@ -31,7 +33,7 @@
             <h1 class="animate-fade-up">Modern <span class="gradient-text">POS System</span> for Modern Business</h1>
             <p class="animate-fade-up" style="animation-delay: 0.1s;">The all-in-one cloud platform to manage sales, inventory, and staff. Built for restaurants, retail, and boutiques.</p>
             <div class="animate-fade-up" style="animation-delay: 0.2s; display: flex; gap: 1rem; justify-content: center;">
-                <a href="/register" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Get Started Now</a>
+                <a href="/register/" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Get Started Now</a>
                 <a href="#features" class="btn btn-outline" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Watch Demo</a>
             </div>
         </section>
@@ -75,7 +77,7 @@
                         <li><i data-lucide="check" style="width: 16px; color: var(--primary);"></i> 3 Staff Accounts</li>
                         <li><i data-lucide="check" style="width: 16px; color: var(--primary);"></i> Basic Analytics</li>
                     </ul>
-                    <a href="/register" class="btn btn-outline" style="width: 100%; margin-top: 2rem;">Choose Basic</a>
+                    <a href="/register/" class="btn btn-outline" style="width: 100%; margin-top: 2rem;">Choose Basic</a>
                 </div>
                 <div class="glass-card featured">
                     <h3>Professional</h3>
@@ -86,7 +88,7 @@
                         <li><i data-lucide="check" style="width: 16px; color: var(--primary);"></i> 15 Staff Accounts</li>
                         <li><i data-lucide="check" style="width: 16px; color: var(--primary);"></i> Advanced Analytics</li>
                     </ul>
-                    <a href="/register" class="btn btn-primary" style="width: 100%; margin-top: 2rem;">Get Started</a>
+                    <a href="/register/" class="btn btn-primary" style="width: 100%; margin-top: 2rem;">Get Started</a>
                 </div>
                 <div class="glass-card">
                     <h3>Enterprise</h3>
@@ -97,6 +99,30 @@
                         <li><i data-lucide="check" style="width: 16px; color: var(--primary);"></i> Custom Integrations</li>
                     </ul>
                     <a href="mailto:support@fastit.uz" class="btn btn-outline" style="width: 100%; margin-top: 2rem;">Contact Sales</a>
+                </div>
+            </div>
+        <section id="download" class="container" style="margin-top: 4rem;">
+            <div class="glass-card" style="display: flex; align-items: center; gap: 4rem; padding: 4rem; overflow: hidden; position: relative;">
+                <div style="flex: 1;">
+                    <div class="platform-badge" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 0.5rem 1rem; border-radius: 99px; display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; font-weight: 600;">
+                        <i data-lucide="smartphone" style="width: 16px; vertical-align: middle;"></i> Mobile Experience
+                    </div>
+                    <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem;">Sell on the <span class="gradient-text">GO</span></h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1.1rem;">Get the FastIT POS mobile app for Android and iOS. Manage your shop, track sales, and print receipts directly from your smartphone.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="/download/" class="btn btn-primary">
+                            <i data-lucide="download"></i> Download App
+                        </a>
+                        <a href="/pos/" class="btn btn-outline">
+                            <i data-lucide="external-link"></i> Web Version
+                        </a>
+                    </div>
+                </div>
+                <div style="flex: 1; display: flex; justify-content: center;" class="animate-fade-up">
+                    <div style="position: relative; width: 280px; height: 500px; background: #000; border: 8px solid #1e293b; border-radius: 40px; box-shadow: 0 40px 100px rgba(0,0,0,0.5); overflow: hidden;">
+                        <div style="width: 100px; height: 25px; background: #1e293b; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border-radius: 0 0 15px 15px; z-index: 10;"></div>
+                        <img src="https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=280&h=500" alt="App Preview" style="width: 100%; height: 100%; object-fit: crop;">
+                    </div>
                 </div>
             </div>
         </section>

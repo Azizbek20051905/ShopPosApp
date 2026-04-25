@@ -11,6 +11,8 @@ from .serializers import (
 from django.contrib.auth.models import User
 from accounts.serializers import UserSerializer
 from accounts.permissions import HasStaffPermission
+from subscriptions.models import Subscription
+from django.utils import timezone
 
 
 class StoreSettingsView(APIView):
@@ -38,6 +40,25 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
+        tenant = user.profile.tenant if hasattr(user, 'profile') else None
+        
+        sub_data = {
+            'plan': 'Basic',
+            'is_trial': False,
+            'trial_days': 0,
+            'is_expired': False
+        }
+        
+        if tenant:
+            sub = Subscription.objects.filter(tenant=tenant).first()
+            if sub:
+                sub_data = {
+                    'plan': sub.plan.name if sub.plan else 'Custom',
+                    'is_trial': sub.is_trial,
+                    'trial_days': (sub.end_date - timezone.now()).days if sub.is_trial else 0,
+                    'is_expired': sub.end_date < timezone.now()
+                }
+
         data = {
             'id': user.id,
             'username': user.username,
@@ -46,8 +67,10 @@ class MeView(APIView):
             'last_name': user.last_name,
             'email': user.email,
             'role': user.profile.role if hasattr(user, 'profile') else 'cashier',
+            'store_name': tenant.name if tenant else "FastIT POS",
             'phone': user.profile.phone if hasattr(user, 'profile') else '',
             'avatar': request.build_absolute_uri(user.profile.avatar.url) if hasattr(user, 'profile') and user.profile.avatar else None,
+            'subscription': sub_data
         }
         return Response(data)
 

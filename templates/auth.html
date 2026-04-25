@@ -27,7 +27,11 @@
             <div id="register-fields">
                 <div class="form-group">
                     <label for="store_name">Store Name</label>
-                    <input type="text" id="store_name" name="store_name" class="form-input" placeholder="My Awesome Store" required>
+                    <input type="text" id="store_name" name="store_name" class="form-input" placeholder="My Awesome Store">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="alex@example.com">
                 </div>
             </div>
 
@@ -41,10 +45,13 @@
                 <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;">
+            <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;">
                 Get Started Free
             </button>
         </form>
+
+        <div id="error-message" style="display: none; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 1.5rem; font-size: 0.875rem; text-align: center;">
+        </div>
 
         <div style="text-align: center; margin-top: 2rem;">
             <p id="toggle-text" style="color: var(--text-secondary); font-size: 0.875rem;">
@@ -62,37 +69,55 @@
         const toggleAuth = document.getElementById('toggle-auth');
         const toggleText = document.getElementById('toggle-text');
         const authForm = document.getElementById('auth-form');
-        const submitBtn = authForm.querySelector('button');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorDiv = document.getElementById('error-message');
 
-        let isLogin = false;
+        const storeNameInput = document.getElementById('store_name');
+        const emailInput = document.getElementById('email');
 
-        toggleAuth.addEventListener('click', (e) => {
-            e.preventDefault();
-            isLogin = !isLogin;
-            
+        let isLogin = window.location.pathname.includes('login');
+
+        function updateUI() {
+            errorDiv.style.display = 'none';
             if (isLogin) {
                 authTitle.innerText = "Welcome back";
                 authSubtitle.innerText = "Login to your dashboard.";
                 registerFields.style.display = 'none';
+                storeNameInput.required = false;
+                emailInput.required = false;
                 submitBtn.innerText = "Login";
                 toggleText.innerHTML = 'Don\'t have a store? <a href="#" id="toggle-auth" style="color: var(--primary); font-weight: 600; text-decoration: none;">Create one free</a>';
             } else {
                 authTitle.innerText = "Create your store";
                 authSubtitle.innerText = "Join 1,000+ businesses using FastIT.";
                 registerFields.style.display = 'block';
+                storeNameInput.required = true;
+                emailInput.required = true;
                 submitBtn.innerText = "Get Started Free";
                 toggleText.innerHTML = 'Already have a store? <a href="#" id="toggle-auth" style="color: var(--primary); font-weight: 600; text-decoration: none;">Login instead</a>';
             }
-            // Re-attach event listener because innerHTML wipes it
-            document.getElementById('toggle-auth').addEventListener('click', arguments.callee);
-        });
+            // Re-attach listener
+            document.getElementById('toggle-auth').addEventListener('click', (e) => {
+                e.preventDefault();
+                isLogin = !isLogin;
+                // Update URL without reload for better UX
+                const newPath = isLogin ? '/login/' : '/register/';
+                window.history.pushState({}, '', newPath);
+                updateUI();
+            });
+        }
+        updateUI();
 
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.innerText = isLogin ? "Logging in..." : "Creating store...";
+            
             const formData = new FormData(authForm);
             const data = Object.fromEntries(formData);
             
-            const url = isLogin ? '/api/token/' : '/api/tenants/register/';
+            const url = isLogin ? '/api/auth/login/' : '/api/tenants/register/';
             
             try {
                 const response = await fetch(url, {
@@ -105,16 +130,23 @@
                 if (response.ok) {
                     if (isLogin) {
                         localStorage.setItem('token', result.access);
-                        window.location.href = '/dashboard';
+                        localStorage.setItem('refresh', result.refresh);
+                        window.location.href = '/dashboard/';
                     } else {
-                        alert("Storage created! Now login to continue.");
+                        alert("Store created successfully! You can now log in.");
                         location.reload();
                     }
                 } else {
-                    alert(result.detail || "Something went wrong.");
+                    const msg = result.detail || result.username?.[0] || result.non_field_errors?.[0] || "Auth failed.";
+                    errorDiv.innerText = msg;
+                    errorDiv.style.display = 'block';
                 }
             } catch (err) {
-                alert("Connection error.");
+                errorDiv.innerText = "Connection error. Please try again.";
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = isLogin ? "Login" : "Get Started Free";
             }
         });
     </script>

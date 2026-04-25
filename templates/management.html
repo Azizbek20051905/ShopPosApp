@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastIT POS - Management</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body x-data="manageApp()" x-init="init()">
+    <nav style="padding: 1rem 0; border-bottom: 1px solid var(--border);">
+        <div class="container nav-content">
+            <div class="logo">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">Management Console</span>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <a href="/pos/" class="btn btn-outline"><i data-lucide="layout-grid" style="width: 16px;"></i> POS Terminal</a>
+                <button class="btn btn-primary" @click="showAddModal = true"><i data-lucide="plus" style="width: 16px;"></i> Add Product</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 3rem;">
+        <div style="display: flex; gap: 2rem; margin-bottom: 3rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <button class="btn" :class="activeTab === 'products' ? 'btn-primary' : 'btn-outline'" @click="activeTab = 'products'">Products</button>
+            <button class="btn" :class="activeTab === 'categories' ? 'btn-primary' : 'btn-outline'" @click="activeTab = 'categories'">Categories</button>
+            <button class="btn" :class="activeTab === 'staff' ? 'btn-primary' : 'btn-outline'" @click="activeTab = 'staff'">Staff</button>
+        </div>
+
+        <!-- Products Table -->
+        <div x-show="activeTab === 'products'" class="glass-card" style="padding: 0; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: rgba(255,255,255,0.03); text-align: left;">
+                        <th style="padding: 1rem;">Product Name</th>
+                        <th style="padding: 1rem;">Category</th>
+                        <th style="padding: 1rem;">Price</th>
+                        <th style="padding: 1rem;">Stock</th>
+                        <th style="padding: 1rem; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="p in products" :key="p.id">
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;" x-text="p.name"></td>
+                            <td style="padding: 1rem;" x-text="p.category_name || '-'"></td>
+                            <td style="padding: 1rem;" x-text="formatCurrency(p.sale_price)"></td>
+                            <td style="padding: 1rem;">
+                                <span :class="p.stock_quantity < 5 ? 'text-danger' : 'text-success'" x-text="p.stock_quantity"></span>
+                            </td>
+                            <td style="padding: 1rem; text-align: right;">
+                                <button class="btn btn-outline" style="padding: 0.5rem;" @click="editProduct(p)"><i data-lucide="edit" style="width: 14px;"></i></button>
+                                <button class="btn btn-outline" style="padding: 0.5rem; border-color: #ef4444; color: #ef4444;" @click="deleteProduct(p.id)"><i data-lucide="trash-2" style="width: 14px;"></i></button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add Product Modal -->
+    <div x-show="showAddModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="glass-card" style="width: 100%; max-width: 500px;">
+            <h2 style="margin-bottom: 2rem;">Add New Product</h2>
+            <form @submit.prevent="saveProduct()">
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" x-model="newProduct.name" class="form-input" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Sale Price</label>
+                        <input type="number" x-model="newProduct.sale_price" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Quantity</label>
+                        <input type="number" x-model="newProduct.stock_quantity" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select x-model="newProduct.category" class="form-input" style="background: var(--bg-dark);">
+                        <option value="">Select Category</option>
+                        <template x-for="c in categories" :key="c.id">
+                            <option :value="c.id" x-text="c.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn btn-outline" style="flex: 1;" @click="showAddModal = false">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function manageApp() {
+            return {
+                activeTab: 'products',
+                products: [],
+                categories: [],
+                showAddModal: false,
+                newProduct: { name: '', sale_price: 0, stock_quantity: 0, category: '' },
+
+                async init() {
+                    lucide.createIcons();
+                    await this.fetchData();
+                },
+
+                async fetchData() {
+                    const token = localStorage.getItem('token');
+                    if (!token) window.location.href = '/login';
+
+                    const pRes = await fetch('/api/products/products/', { 
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const pData = await pRes.json();
+                    this.products = pData.results || [];
+
+                    const cRes = await fetch('/api/products/categories/', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const cData = await cRes.json();
+                    this.categories = cData.results || [];
+                    
+                    setTimeout(() => lucide.createIcons(), 0);
+                },
+
+                async saveProduct() {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('/api/products/products/', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            name: this.newProduct.name,
+                            sale_price: this.newProduct.sale_price,
+                            purchase_price: this.newProduct.sale_price * 0.7, // Demo logic
+                            stock_quantity: this.newProduct.stock_quantity,
+                            category: this.newProduct.category || null
+                        })
+                    });
+
+                    if (res.ok) {
+                        this.showAddModal = false;
+                        this.newProduct = { name: '', sale_price: 0, stock_quantity: 0, category: '' };
+                        await this.fetchData();
+                    } else {
+                        alert("Error saving product.");
+                    }
+                },
+
+                async deleteProduct(id) {
+                    if (!confirm("Are you sure?")) return;
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`/api/products/products/${id}/`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) await this.fetchData();
+                },
+
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS' }).format(amount);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

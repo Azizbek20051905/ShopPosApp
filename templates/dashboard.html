@@ -1,0 +1,391 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastIT POS - Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .sub-banner {
+            background: rgba(99, 102, 241, 0.1);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 0;
+            font-size: 0.875rem;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-open { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .status-closed { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        
+        .activity-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass);
+        }
+        
+        .chart-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .chart-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .quick-action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-action-card:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body x-data="dashApp()" x-init="init()">
+    <!-- Subscription Info -->
+    <div class="sub-banner">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <span class="platform-badge" style="margin-bottom: 0; padding: 0.2rem 0.6rem; font-size: 0.7rem;" x-text="subscription.plan + ' Plan'"></span>
+                <span x-show="subscription.is_trial" style="color: var(--text-secondary);">Trial ends in <strong class="gradient-text" x-text="subscription.trial_days"></strong> days</span>
+            </div>
+            <div x-show="subscription.is_expired" style="color: #ef4444; font-weight: 600; display:flex; align-items:center; gap:0.5rem;">
+                <i data-lucide="alert-circle" style="width: 16px;"></i> Subscription Expired! <a href="/billing/" style="color: #ef4444; text-decoration: underline;">Renew Now</a>
+            </div>
+        </div>
+    </div>
+
+    <nav style="padding: 1rem 0; border-bottom: 1px solid var(--border);">
+        <div class="container nav-content">
+            <div class="logo">
+                <i data-lucide="zap" style="color: var(--primary);"></i>
+                <span class="gradient-text">FastIT Console</span>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="text-align: right; margin-right: 1rem;">
+                    <div style="font-size: 0.875rem; font-weight: 600;" x-text="userName"></div>
+                    <div class="status-pill" :class="storeStatus === 'Open' ? 'status-open' : 'status-closed'">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+                        <span x-text="storeStatus"></span>
+                    </div>
+                </div>
+                <button class="btn btn-outline" @click="logout()"><i data-lucide="log-out" style="width: 16px;"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="padding: 2rem 0;">
+        <!-- Header -->
+        <div style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em;">Dashboard</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.25rem;">Overviewing <span class="gradient-text" style="font-weight: 600;" x-text="storeName"></span></p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <a href="/pos/" class="btn btn-primary" style="padding: 0.875rem 2rem;">
+                    <i data-lucide="terminal" style="width: 18px;"></i> POS Terminal
+                </a>
+            </div>
+        </div>
+
+        <!-- Top Section: 3 Main Cards -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2.5rem;">
+            <div class="glass-card" style="padding: 2rem; border-left: 4px solid var(--primary);">
+                <div style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;">Total Sales</div>
+                <div style="font-size: 2.75rem; font-weight: 900; line-height: 1;" x-text="formatCurrency(stats.daily_sales)"></div>
+                <div style="color: var(--accent); font-size: 0.875rem; margin-top: 1rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <i data-lucide="arrow-up-right" style="width: 16px;"></i> 12.5% vs yesterday
+                </div>
+            </div>
+            <div class="glass-card" style="padding: 2rem; border-left: 4px solid var(--secondary);">
+                <div style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;">Total Orders</div>
+                <div style="font-size: 2.75rem; font-weight: 900; line-height: 1;" x-text="stats.order_count"></div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 1rem;">Daily volume</div>
+            </div>
+            <div class="glass-card" style="padding: 2rem; border-left: 4px solid var(--accent);">
+                <div style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;">Net Profit</div>
+                <div style="font-size: 2.75rem; font-weight: 900; line-height: 1;" x-text="formatCurrency(stats.daily_profit || (stats.daily_sales * 0.3))"></div>
+                <div style="color: var(--accent); font-size: 0.875rem; margin-top: 1rem;">30% margin avg</div>
+            </div>
+        </div>
+
+        <!-- Insights Bar -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--glass); padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
+                <div style="background: rgba(99, 102, 241, 0.1); padding: 0.5rem; border-radius: 10px;"><i data-lucide="award" style="color: var(--primary); width: 20px;"></i></div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Top Product</div>
+                    <div style="font-size: 0.95rem; font-weight: 700;" x-text="stats.top_product"></div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--glass); padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
+                <div style="background: rgba(236, 72, 153, 0.1); padding: 0.5rem; border-radius: 10px;"><i data-lucide="clock" style="color: var(--secondary); width: 20px;"></i></div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Peak Hour</div>
+                    <div style="font-size: 0.95rem; font-weight: 700;" x-text="stats.peak_hour"></div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--glass); padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 0.5rem; border-radius: 10px;"><i data-lucide="users" style="color: var(--accent); width: 20px;"></i></div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Active Staff</div>
+                    <div style="font-size: 0.95rem; font-weight: 700;" x-text="stats.active_staff + ' Members'"></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 2rem;">
+            <!-- Large Left Panel: Chart -->
+            <div class="glass-card" style="padding: 2.5rem; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                    <div>
+                        <h3 style="font-size: 1.25rem;">Sales Analytics</h3>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">Revenue performance over time</p>
+                    </div>
+                    <div style="display: flex; background: var(--glass); padding: 0.25rem; border-radius: 12px; border: 1px solid var(--border);">
+                        <div class="chart-tab" :class="activeTab === 'Today' && 'active'" @click="setChart('Today')">Today</div>
+                        <div class="chart-tab" :class="activeTab === 'Week' && 'active'" @click="setChart('Week')">Week</div>
+                        <div class="chart-tab" :class="activeTab === 'Month' && 'active'" @click="setChart('Month')">Month</div>
+                        <div class="chart-tab" :class="activeTab === 'Year' && 'active'" @click="setChart('Year')">Year</div>
+                    </div>
+                </div>
+                <!-- Empty State for Chart -->
+                <div x-show="!stats.daily_sales && activeTab === 'Today'" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); min-height: 300px;">
+                    <i data-lucide="bar-chart-2" style="width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.2;"></i>
+                    <p>No sales data recorded yet for today.</p>
+                </div>
+                <div x-show="stats.daily_sales || activeTab !== 'Today'" style="flex: 1;">
+                    <canvas id="salesChart" style="width: 100%; height: 350px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Panel: Actions & Activity -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Quick Actions -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h3 style="font-size: 1rem; margin-bottom: 1.25rem;">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;">
+                        <a href="/pos/" class="btn btn-outline" style="justify-content: flex-start; padding: 1rem;">
+                            <i data-lucide="plus-circle" style="color: var(--primary); width: 18px;"></i> New Sale
+                        </a>
+                        <a href="/manage/" class="btn btn-outline" style="justify-content: flex-start; padding: 1rem;">
+                            <i data-lucide="package-plus" style="color: var(--secondary); width: 18px;"></i> Add Product
+                        </a>
+                        <a href="/manage/" class="btn btn-outline" style="justify-content: flex-start; padding: 1rem;">
+                            <i data-lucide="truck" style="color: var(--accent); width: 18px;"></i> Manage Stock
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="glass-card" style="padding: 1.5rem; flex: 1;">
+                    <h3 style="font-size: 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="activity" style="width: 18px;"></i> Activity Log
+                    </h3>
+                    <div class="activity-log">
+                        <template x-if="activity.length === 0">
+                            <div style="text-align: center; color: var(--text-secondary); padding: 2rem 0;">
+                                <i data-lucide="history" style="width: 32px; margin-bottom: 0.5rem; opacity: 0.2;"></i>
+                                <p style="font-size: 0.875rem;">No recent activities.</p>
+                            </div>
+                        </template>
+                        <template x-for="act in activity">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i :data-lucide="act.icon" style="width: 14px;" :style="'color: ' + act.color"></i>
+                                </div>
+                                <div style="overflow: hidden;">
+                                    <div style="font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" x-text="act.title"></div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);" x-text="act.time"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function dashApp() {
+            return {
+                userName: 'Admin User',
+                storeName: 'Main Outlet',
+                storeStatus: 'Open',
+                activeTab: 'Week',
+                subscription: { plan: 'Professional', trial_days: 14, is_trial: true, is_expired: false },
+                stats: { 
+                    daily_sales: 4250000, 
+                    order_count: 54, 
+                    avg_order: 78700, 
+                    low_stock: 12,
+                    active_staff: 5,
+                    top_product: 'Vanilla Latte XL',
+                    top_product_qty: 24,
+                    peak_hour: '14:00 - 15:00'
+                },
+                activity: [
+                    { title: 'New Sale: 125,000 UZS', time: '2 mins ago', icon: 'shopping-cart', color: 'var(--primary)' },
+                    { title: 'Inventory Alert: Coffee Beans', time: '15 mins ago', icon: 'alert-triangle', color: '#ef4444' },
+                    { title: 'Staff Login: Azizbek', time: '1 hour ago', icon: 'user', color: var(--accent) },
+                    { title: 'Stock Added: 50x Milk', time: '2 hours ago', icon: 'plus', color: var(--secondary) }
+                ],
+                chart: null,
+
+                async init() {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
+                    lucide.createIcons();
+                    
+                    try {
+                        const [meRes, dashRes] = await Promise.all([
+                            this.apiFetch('/api/me/'),
+                            this.apiFetch('/api/dashboard/')
+                        ]);
+
+                        this.userName = meRes.name;
+                        this.storeName = meRes.store_name;
+                        this.subscription = meRes.subscription;
+                        
+                        this.stats = {
+                            daily_sales: dashRes.today_sales,
+                            daily_profit: dashRes.today_profit,
+                            order_count: dashRes.total_orders,
+                            avg_order: dashRes.today_sales / (dashRes.total_orders || 1),
+                            low_stock: dashRes.low_stock.length,
+                            active_staff: dashRes.staff_count,
+                            top_product: dashRes.top_product,
+                            top_product_qty: dashRes.top_product_qty,
+                            peak_hour: dashRes.peak_hour
+                        };
+                        
+                        this.storeStatus = dashRes.store_status;
+
+                        this.renderChart();
+                    } catch (err) {
+                        console.error("Failed to load dashboard data", err);
+                    }
+                },
+
+                async apiFetch(url) {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.status === 401) {
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                    }
+                    return res.json();
+                },
+
+                renderChart() {
+                    const ctx = document.getElementById('salesChart').getContext('2d');
+                    if (this.chart) this.chart.destroy();
+                    
+                    const config = this.getChartConfig(this.activeTab);
+                    
+                    this.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: config.labels,
+                            datasets: [{
+                                label: 'Sales (k UZS)',
+                                data: config.data,
+                                borderColor: '#6366f1',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                fill: true,
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                pointRadius: 4,
+                                pointBackgroundColor: '#6366f1'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                                x: { grid: { display: false }, border: { display: false } }
+                            }
+                        }
+                    });
+                },
+
+                getChartConfig(tab) {
+                    const configs = {
+                        'Today': {
+                            labels: ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00'],
+                            data: [150, 420, 850, 1100, 950, 1400, 800]
+                        },
+                        'Week': {
+                            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            data: [650, 590, 800, 810, 560, 950, 1200]
+                        },
+                        'Month': {
+                            labels: ['W1', 'W2', 'W3', 'W4'],
+                            data: [4500, 5200, 4100, 6800]
+                        },
+                        'Year': {
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                            data: [18000, 22000, 19000, 25000, 21000, 28000, 32000, 31000, 35000, 42000, 38000, 50000]
+                        }
+                    };
+                    return configs[tab];
+                },
+
+                setChart(tab) {
+                    this.activeTab = tab;
+                    this.renderChart();
+                },
+
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS', maximumFractionDigits: 0 }).format(amount);
+                },
+
+                logout() {
+                    localStorage.removeItem('token');
+                    window.location.href = '/';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
